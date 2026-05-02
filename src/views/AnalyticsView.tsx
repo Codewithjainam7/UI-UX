@@ -53,11 +53,11 @@ export function AnalyticsView({ stats, emails, onNavigate }: { stats: any, email
   return (
     <div className="flex h-full w-full">
       {/* Left/Center Column (Metrics & Charts) */}
-      <div className="flex-1 flex flex-col gap-6 min-w-0 p-8 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col gap-4 sm:gap-6 min-w-0 p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         {/* Header */}
-        <header className="flex items-center justify-between glass-panel rounded-xl px-6 py-4 border-white/10 shadow-lg">
-          <h2 className="text-2xl font-display font-semibold text-white">Analytics</h2>
-          <div className="flex items-center gap-3 bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-on-surface-variant text-sm cursor-pointer hover:bg-white/5 transition-colors">
+        <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between glass-panel rounded-xl px-5 py-4 gap-4 border-white/10 shadow-lg">
+          <h2 className="text-xl sm:text-2xl font-display font-semibold text-white">Analytics Overview</h2>
+          <div className="flex items-center gap-3 bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-on-surface-variant text-sm cursor-pointer hover:bg-white/5 transition-colors w-full sm:w-auto justify-center">
             <Calendar size={18} />
             <span>Last 30 Days</span>
             <span className="material-symbols-outlined text-[18px]">expand_more</span>
@@ -101,7 +101,7 @@ export function AnalyticsView({ stats, emails, onNavigate }: { stats: any, email
           </div>
 
           {/* Donut Chart */}
-          <div className="col-span-1 lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative min-h-[300px]">
+          <div className="col-span-1 lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col items-center justify-center relative min-h-[350px]">
             <div className="w-full flex justify-between items-center absolute top-6 left-0 px-6">
               <h3 className="text-lg font-display font-semibold text-white">Category Breakdown</h3>
             </div>
@@ -169,7 +169,7 @@ export function AnalyticsView({ stats, emails, onNavigate }: { stats: any, email
           </div>
 
           {/* Horizontal Bar Chart */}
-          <div className="col-span-1 lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col">
+          <div className="col-span-1 lg:col-span-2 glass-panel rounded-xl p-6 flex flex-col min-h-[250px]">
             <h3 className="text-lg font-display font-semibold text-white mb-8">Top Issues</h3>
             <div className="flex flex-col gap-6 flex-1 justify-center">
               <ProgressBar label="Password Reset" value="45%" percent={45} color="bg-primary-container" />
@@ -177,6 +177,30 @@ export function AnalyticsView({ stats, emails, onNavigate }: { stats: any, email
               <ProgressBar label="Feature Request" value="15%" percent={15} color="bg-tertiary-container" />
               <ProgressBar label="Bug Report" value="12%" percent={12} color="bg-white/20" />
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Activity Feed (Visible only on mobile/tablet) */}
+        <div className="xl:hidden glass-panel rounded-xl p-6 flex flex-col gap-6 mb-8">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-display font-semibold text-white">Recent Activity</h3>
+            <button onClick={() => onNavigate('sent')} className="text-xs font-bold text-primary uppercase tracking-widest hover:underline">View All</button>
+          </div>
+          <div className="flex flex-col gap-8">
+            {sentEmails.slice(0, 3).map((email, idx) => (
+              <FeedItem 
+                key={email.id}
+                icon={<Activity size={16} className="text-primary" />} 
+                iconBg="bg-primary-container/20 border-primary/50 shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                title={`Replied to ${email.sender}`}
+                time="Just now"
+                last={idx === 2}
+              >
+                <div className="mt-3 bg-black/20 border border-white/5 rounded-lg p-3 text-xs text-on-surface-variant/90 leading-relaxed break-words line-clamp-2">
+                  "{email.sentReply || email.preview}"
+                </div>
+              </FeedItem>
+            ))}
           </div>
         </div>
       </div>

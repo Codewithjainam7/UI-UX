@@ -12,9 +12,11 @@ import {
   Send,
   Inbox,
   FileText,
-  Check
+  Check,
+  AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateAIReply } from '../services/groq';
 
 
 import { cn } from '@/lib/utils';
@@ -70,22 +72,36 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
     ? localSubjects[currentEmail.id]
     : currentEmail?.subject || "";
 
-  const handleRegenerate = () => {
+  const handleRegenerate = async () => {
     if (!currentEmail) return;
     setIsGenerating(true);
-    setTimeout(() => {
+    try {
+      const newReply = await generateAIReply(
+        currentEmail.body, 
+        currentEmail.sender, 
+        currentEmail.subject
+      );
+      
+      setLocalDrafts(prev => ({
+        ...prev,
+        [currentEmail.id]: newReply
+      }));
+      
       setReplyVersion(prev => ({
         ...prev,
-        [currentEmail.id]: (prev[currentEmail.id] || 1) === 1 ? 2 : 1
+        [currentEmail.id]: (prev[currentEmail.id] || 1) + 1
       }));
-      // Clear local draft when regenerating to show the new AI version
-      setLocalDrafts(prev => {
-        const next = { ...prev };
-        delete next[currentEmail.id];
-        return next;
-      });
+    } catch (err: any) {
+      console.error(err);
+      // If no API key, we stay on mock but show a hint in the console
+      // or we can set a fallback message
+      setLocalDrafts(prev => ({
+        ...prev,
+        [currentEmail.id]: `[ERROR: ${err.message}]\n\nPlease ensure your Groq API Key is set in the .env file.`
+      }));
+    } finally {
       setIsGenerating(false);
-    }, 800);
+    }
   };
 
   const [isApproving, setIsApproving] = React.useState(false);
@@ -122,7 +138,7 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
         "w-full md:w-[380px] border-r border-white/10 bg-black/10 backdrop-blur-[20px] flex flex-col flex-shrink-0 z-20 shadow-lg transition-transform duration-300",
         showDetailOnMobile ? "-translate-x-full md:translate-x-0" : "translate-x-0"
       )}>
-        <div className="p-4 border-b border-white/10 flex flex-col gap-4">
+        <div className="p-3 sm:p-4 border-b border-white/10 flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-display font-semibold text-white capitalize">{view}</h2>
             <button 
@@ -227,18 +243,21 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
         showDetailOnMobile ? "translate-x-0 fixed inset-0 md:relative md:inset-auto z-[30]" : "translate-x-full md:translate-x-0"
       )}>
         {/* Mobile Back Button */}
-        <div className="md:hidden p-4 border-b border-white/10 bg-slate-950 flex items-center gap-3 shrink-0">
+        <div className="md:hidden px-4 py-3 border-b border-white/10 bg-slate-950 flex items-center gap-3 shrink-0">
           <button 
             onClick={() => setShowDetailOnMobile(false)}
-            className="p-2 text-on-surface-variant hover:bg-white/5 rounded-lg"
+            className="p-2 -ml-2 text-primary hover:bg-primary/10 rounded-lg active:scale-90 transition-all"
           >
             <ChevronDown className="rotate-90" size={24} />
           </button>
-          <span className="font-semibold text-white">Back to Inbox</span>
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant">Navigation</span>
+            <span className="text-sm font-bold text-white">Back to Inbox</span>
+          </div>
         </div>
 
         {/* Top Section: Email Detail Content (Designated Scrollable Area) */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 sm:p-10">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-10">
           {currentEmail ? (
             <motion.div 
               key={currentEmail.id}
@@ -246,13 +265,13 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
               animate={{ opacity: 1, y: 0 }}
               className="max-w-4xl mx-auto"
             >
-              <div className="flex justify-between items-start mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full border border-white/20 flex items-center justify-center bg-gradient-to-br from-primary-container/40 to-indigo-500/20 text-white font-bold text-xl overflow-hidden shadow-xl">
+              <div className="flex justify-between items-start mb-6 sm:mb-8">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/20 flex items-center justify-center bg-gradient-to-br from-primary-container/40 to-indigo-500/20 text-white font-bold text-lg sm:text-xl overflow-hidden shadow-xl">
                     {currentEmail.sender.charAt(0)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-display font-bold text-white mb-0.5">{currentEmail.sender}</h2>
+                    <h2 className="text-xl sm:text-2xl font-display font-bold text-white mb-0.5">{currentEmail.sender}</h2>
                     <div className="flex items-center text-xs font-sans text-on-surface-variant">
                       <span>{currentEmail.email}</span>
                     </div>
@@ -264,12 +283,12 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
                 key="subject"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-2xl sm:text-3xl font-display font-bold text-white mb-8 leading-tight tracking-tight"
+                className="text-xl sm:text-3xl font-display font-bold text-white mb-6 sm:mb-8 leading-tight tracking-tight"
               >
                 {currentEmail.subject}
               </motion.h1>
               
-              <div className="text-[16px] font-sans text-on-surface/90 leading-relaxed space-y-6 bg-white/[0.03] p-6 sm:p-8 rounded-[24px] border border-white/10 whitespace-pre-wrap shadow-xl backdrop-blur-sm">
+              <div className="text-[15px] sm:text-[16px] font-sans text-on-surface/90 leading-relaxed space-y-6 bg-white/[0.03] p-5 sm:p-8 rounded-[20px] sm:rounded-[24px] border border-white/10 whitespace-pre-wrap shadow-xl backdrop-blur-sm">
                 {currentEmail.body}
               </div>
 
