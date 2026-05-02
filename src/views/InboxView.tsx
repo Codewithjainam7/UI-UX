@@ -24,7 +24,7 @@ interface InboxViewProps {
   selectedEmailId: number;
   setSelectedEmailId: (id: number) => void;
   searchQuery: string;
-  onApprove: (id: number) => void;
+  onApprove: (id: number, replyText: string) => void;
   view: 'inbox' | 'sent';
 }
 
@@ -108,7 +108,7 @@ export function InboxView({ emails, selectedEmailId, setSelectedEmailId, searchQ
     }, 50);
 
     setTimeout(() => {
-      onApprove(currentEmail.id);
+      onApprove(currentEmail.id, draftText);
       setIsApproving(false);
       setSendProgress(0);
       setShowDetailOnMobile(false);

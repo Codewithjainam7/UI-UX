@@ -25,7 +25,7 @@ import {
 
 import { Email } from '../data/emails';
 
-export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }) {
+export function AnalyticsView({ stats, emails, onNavigate }: { stats: any, emails: Email[], onNavigate: (tab: string) => void }) {
   // Dynamic Category Breakdown
   const categories = emails.reduce((acc: any, email) => {
     acc[email.category] = (acc[email.category] || 0) + 1;
@@ -39,7 +39,7 @@ export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }
   }));
 
   // Dynamic Activity Feed (Last 5 sent replies)
-  const sentEmails = emails.filter(e => e.replied).slice(-5).reverse();
+  const sentEmails = emails.filter(e => e.replied).sort((a, b) => b.id - a.id).slice(0, 5);
 
   const lineData = [
     { name: 'Mon', manual: 60, ai: 40 },
@@ -182,9 +182,10 @@ export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }
       </div>
 
       {/* Right Sidebar (Activity Feed) - Hidden on mobile */}
-      <aside className="hidden xl:flex w-80 flex-shrink-0 glass-panel border-y-0 border-r-0 lg:border-l border-white/10 flex-col h-full bg-black/10 backdrop-blur-md">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-8">
+      <aside className="hidden xl:flex w-80 flex-shrink-0 glass-panel border-y-0 border-r-0 lg:border-l border-white/10 flex-col h-full bg-black/10 backdrop-blur-md overflow-hidden">
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-h-0 p-6">
+          <div className="flex items-center justify-between mb-8 flex-shrink-0">
             <h3 className="text-xl font-display font-semibold text-white">Activity Feed</h3>
             <Filter size={18} className="text-on-surface-variant hover:text-white cursor-pointer transition-colors" />
           </div>
@@ -199,7 +200,7 @@ export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }
                 time="Just now"
                 last={idx === sentEmails.length - 1}
               >
-                <div className="mt-3 bg-black/20 border border-white/5 rounded-lg p-3 text-xs text-on-surface-variant/90 leading-relaxed truncate">
+                <div className="mt-3 bg-black/20 border border-white/5 rounded-lg p-3 text-xs text-on-surface-variant/90 leading-relaxed break-words line-clamp-3">
                   "{email.sentReply || email.preview}"
                 </div>
               </FeedItem>
@@ -212,9 +213,14 @@ export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }
           </div>
         </div>
         
-        <div className="mt-auto p-6 border-t border-white/10">
-          <button className="w-full py-3 rounded-lg border border-white/10 text-on-surface-variant font-sans font-semibold text-sm hover:bg-white/5 hover:text-white transition-colors">
-            View All Activity
+        {/* Footer Area */}
+        <div className="p-6 border-t border-white/10 flex-shrink-0">
+          <button 
+            onClick={() => onNavigate('sent')}
+            className="w-full py-3 rounded-lg border border-white/10 text-on-surface-variant font-sans font-semibold text-sm hover:bg-white/5 hover:text-white transition-all active:scale-[0.98] group relative overflow-hidden"
+          >
+            <span className="relative z-10">View All Activity</span>
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           </button>
         </div>
       </aside>
@@ -262,7 +268,7 @@ function FeedItem({ icon, iconBg, title, time, desc, children, last }: any) {
       <div className={`relative z-10 w-8 h-8 rounded-full border flex items-center justify-center flex-shrink-0 ${iconBg}`}>
         {icon}
       </div>
-      <div className="flex flex-col flex-1 pb-2">
+      <div className="flex flex-col flex-1 pb-2 min-w-0">
         <p className="text-sm font-sans font-medium text-white">{title}</p>
         <span className="text-[10px] font-sans font-semibold text-on-surface-variant/60 uppercase tracking-wider mt-1">{time}</span>
         {desc && <p className="text-xs font-sans text-on-surface-variant/80 mt-2 leading-relaxed">{desc}</p>}

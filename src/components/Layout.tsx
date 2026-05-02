@@ -108,9 +108,9 @@ export function Layout({ children, activeTab, setActiveTab, searchQuery, setSear
         </div>
 
         <div className="mt-auto flex flex-col gap-1 pt-4 border-t border-white/10">
-          <button className="flex items-center gap-3 text-slate-400 px-4 py-3 hover:text-white hover:bg-white/5 transition-all rounded-lg">
-            <LogOut size={20} />
-            <span className="font-semibold text-sm">Logout</span>
+          <button className="flex items-center gap-3 text-slate-400 px-4 py-3 hover:text-white hover:bg-white/5 transition-all rounded-lg active:scale-95">
+            <Settings size={20} />
+            <span className="font-semibold text-sm">Settings</span>
           </button>
         </div>
       </nav>
