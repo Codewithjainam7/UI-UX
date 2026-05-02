@@ -23,23 +23,33 @@ import {
   Cell
 } from 'recharts';
 
-const lineData = [
-  { name: 'Mon', manual: 60, ai: 40 },
-  { name: 'Tue', manual: 65, ai: 45 },
-  { name: 'Wed', manual: 55, ai: 60 },
-  { name: 'Thu', manual: 70, ai: 85 },
-  { name: 'Fri', manual: 60, ai: 100 },
-  { name: 'Sat', manual: 50, ai: 110 },
-  { name: 'Sun', manual: 40, ai: 95 },
-];
+import { Email } from '../data/emails';
 
-const pieData = [
-  { name: 'Primary', value: 60, color: '#7c3aed' },
-  { name: 'Secondary', value: 25, color: '#3131c0' },
-  { name: 'Tertiary', value: 15, color: '#a15100' },
-];
+export function AnalyticsView({ stats, emails }: { stats: any, emails: Email[] }) {
+  // Dynamic Category Breakdown
+  const categories = emails.reduce((acc: any, email) => {
+    acc[email.category] = (acc[email.category] || 0) + 1;
+    return acc;
+  }, {});
 
-export function AnalyticsView() {
+  const dynamicPieData = Object.entries(categories).map(([name, value], index) => ({
+    name,
+    value: value as number,
+    color: ['#7c3aed', '#3131c0', '#a15100', '#10b981', '#f59e0b'][index % 5]
+  }));
+
+  // Dynamic Activity Feed (Last 5 sent replies)
+  const sentEmails = emails.filter(e => e.replied).slice(-5).reverse();
+
+  const lineData = [
+    { name: 'Mon', manual: 60, ai: 40 },
+    { name: 'Tue', manual: 65, ai: 45 },
+    { name: 'Wed', manual: 55, ai: 60 },
+    { name: 'Thu', manual: 70, ai: 85 },
+    { name: 'Fri', manual: 60, ai: 100 },
+    { name: 'Sat', manual: 50, ai: 110 },
+    { name: 'Sun', manual: 40, ai: 95 },
+  ];
   return (
     <div className="flex h-full w-full">
       {/* Left/Center Column (Metrics & Charts) */}
@@ -56,9 +66,9 @@ export function AnalyticsView() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Total Emails" value="47" trend="12%" up isUp glowColor="bg-primary-container" />
-          <StatCard title="Auto-Resolved" value="38" trend="81%" up isUp glowColor="bg-tertiary" />
-          <StatCard title="Avg Response" value={<>1.2<span className="text-2xl text-on-surface-variant ml-1 font-normal">min</span></>} trend="94%" isUp={false} glowColor="bg-primary" />
+          <StatCard title="Total Emails" value={stats.total} trend="12%" up isUp glowColor="bg-primary-container" />
+          <StatCard title="Sent (AI)" value={stats.sent} trend={`${stats.resolvedRate}%`} up isUp glowColor="bg-tertiary" />
+          <StatCard title="Avg Response" value={<>{stats.avgResponse}<span className="text-2xl text-on-surface-variant ml-1 font-normal">min</span></>} trend="94%" isUp={false} glowColor="bg-primary" />
           <StatCard title="CSAT" value="4.8" trend="0.3" up isUp glowColor="bg-secondary-container" />
         </div>
 
@@ -100,7 +110,7 @@ export function AnalyticsView() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={pieData}
+                    data={dynamicPieData}
                     cx="50%"
                     cy="50%"
                     innerRadius={60}
@@ -108,7 +118,7 @@ export function AnalyticsView() {
                     stroke="none"
                     dataKey="value"
                   >
-                    {pieData.map((entry, index) => (
+                    {dynamicPieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -171,8 +181,8 @@ export function AnalyticsView() {
         </div>
       </div>
 
-      {/* Right Sidebar (Activity Feed) */}
-      <aside className="w-80 flex-shrink-0 glass-panel border-y-0 border-r-0 lg:border-l border-white/10 flex flex-col h-full bg-black/10 backdrop-blur-md">
+      {/* Right Sidebar (Activity Feed) - Hidden on mobile */}
+      <aside className="hidden xl:flex w-80 flex-shrink-0 glass-panel border-y-0 border-r-0 lg:border-l border-white/10 flex-col h-full bg-black/10 backdrop-blur-md">
         <div className="p-6">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-xl font-display font-semibold text-white">Activity Feed</h3>
@@ -180,44 +190,25 @@ export function AnalyticsView() {
           </div>
           
           <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-8 custom-scrollbar">
-            <FeedItem 
-              icon={<Activity size={16} className="text-primary" />} 
-              iconBg="bg-primary-container/20 border-primary/50 shadow-[0_0_12px_rgba(124,58,237,0.4)]"
-              title="Auto-replied to Sarah J."
-              time="Just now"
-            >
-              <div className="mt-3 bg-black/20 border border-white/5 rounded-lg p-3 text-xs text-on-surface-variant/90 leading-relaxed">
-                "I've updated your billing details as requested..."
+            {sentEmails.length > 0 ? sentEmails.map((email, idx) => (
+              <FeedItem 
+                key={email.id}
+                icon={<Activity size={16} className="text-primary" />} 
+                iconBg="bg-primary-container/20 border-primary/50 shadow-[0_0_12px_rgba(124,58,237,0.4)]"
+                title={`Replied to ${email.sender}`}
+                time="Just now"
+                last={idx === sentEmails.length - 1}
+              >
+                <div className="mt-3 bg-black/20 border border-white/5 rounded-lg p-3 text-xs text-on-surface-variant/90 leading-relaxed truncate">
+                  "{email.sentReply || email.preview}"
+                </div>
+              </FeedItem>
+            )) : (
+              <div className="text-center py-10 opacity-30 flex flex-col items-center">
+                <Activity size={40} className="mb-4" />
+                <p className="text-sm font-bold uppercase tracking-widest">No recent activity</p>
               </div>
-            </FeedItem>
-
-            <FeedItem 
-              icon={<Tag size={16} className="text-on-surface-variant" />} 
-              iconBg="bg-surface-bright border-white/20"
-              title="Categorized 3 new emails"
-              time="2 mins ago"
-            >
-              <div className="flex gap-2 mt-3">
-                <span className="px-2.5 py-1 rounded-full border border-secondary/30 bg-secondary-container/20 text-secondary text-[10px] font-semibold tracking-wide">Billing</span>
-                <span className="px-2.5 py-1 rounded-full border border-tertiary/30 bg-tertiary-container/20 text-tertiary text-[10px] font-semibold tracking-wide">Support</span>
-              </div>
-            </FeedItem>
-
-            <FeedItem 
-              icon={<CheckCircle2 size={16} className="text-primary" />} 
-              iconBg="bg-primary-container/20 border-primary/50 shadow-[0_0_12px_rgba(124,58,237,0.4)]"
-              title="Resolved issue #4092"
-              time="15 mins ago"
-              desc="Password reset flow completed successfully without human intervention."
-            />
-
-            <FeedItem 
-              icon={<FileText size={16} className="text-on-surface-variant" />} 
-              iconBg="bg-surface-bright border-white/20"
-              title="Generated weekly report"
-              time="1 hour ago"
-              last
-            />
+            )}
           </div>
         </div>
         
